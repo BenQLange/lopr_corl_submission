@@ -25,5 +25,14 @@ python main.py --base configs/prediction/variational_transformer_4x4x64.yaml -t 
 
 ## Visualization on of the predictions
 
-<!-- ![](media/pred_1.gif)
-![](media/pred_4.gif) -->
+Each scene consists of observation (0.5s), ground truth future (1.5), and 20 randomly sampled predictions (1.5s). Each grid's cell contains a continuous value between 0 and 1 representing a probabilty of occupancy. Ground truth grids are generated with lidar sensor measurements. As a result, the dataset doesn't require any manual labelling and the prediction network can be trained in the self-supervised fashion. However, contrary to vectorized occupancy grid approaches that relies on the object detection framework, the grids are significantly noisier due to the stochasticity in the lidar's ray hits with objects, random reflections, and myriad of other small objects (trees, leaves, barriers, curbs, etc.). Below, we visualize couple of examples of predictions from Nuscenes Dataset that captures challenging scenarios due to the unknwon intent of the agent, occlusions, and partial observability.
+
+Scene 1: Ego vehicle moving to the left is surrounded by other traffic particpants. Traffic above the ego vehicle is moving in the opposing direction to the right side of the grid. In the observed grids, the bus located above the ego vehicle is occluding majority of the environment. Our framework realistically forecasts potential futures of observed agents and reasons over the plausible occluded environments and other agents entering the scenes. For example, our framework infers: potential intersection  (Samples 2), potential oncoming agents following the bus similar to the ground truth  (Samples 3, 4, 12), parked cars that are occluded in the observed grids by the bus (Samples 6, 13, 14, 19, 20), and an empty straight road (Samples 5, 8, 10, 15, 16).
+![](visualization/LOPR_GIF_618_210.gif)
+
+Scene 2: Ego vehicle moving to the left is surrounded by other traffic particpants. Traffic above the ego vehicle is moving in the opposing direction to the right side of the grid. In the observed grids, the vehicle is passing our ego vehicle and moving to the right. In the ground truth future, the passing vehicle is immediately followed by another vehicle. Our framework realistically forecasts potential futures of observed agents and reasons over the plausible occluded environments and other agents entering the scenes. For example, our framework infers: another vehicle following the observed passing vehicle similar to the ground truth future (Sample 13), a vehicle parked passing below our ego vehicle (Samples 1, 7), potential intersection (Sample 4), and a realtively empty road (in all other samples).
+![](visualization/LOPR_GIF_81_140.gif)
+
+Scene 3: Ego vehicle turning at the intersection surroudned by traffic surrounded by other traffic particiapnts. Our framework realistically forecasts potential futures of observed agents and reasons over the plausible occluded environments and other agents entering the scenes. 
+![](visualization/LOPR_GIF_490_140.gif)
+
