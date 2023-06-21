@@ -1,0 +1,118 @@
+model:
+  base_learning_rate: 5.0e-05
+  target: src.models.prediction.latent_prediction.LatentPrediction
+  params:
+    encoder_stage_key: "observations"
+    prediction_stage_key: "future"
+    latent_stage_key: "latent"
+    loss_type: latent_mse_loss
+    ckpt_path: None
+    monitor: "val/loss_mse_latents"
+    image_size: 256
+    channels: 3
+    obs_horizon: 5
+    future_horizon: 15
+    log_every_n_steps: 1500
+    used_cached_latents: true
+    use_maps: True
+    use_camera: True
+    training_extrap_t: fixed
+
+    encoder_stage_config:
+      target: src.models.encoders.autoencoder.AutoencoderKL
+      params:
+        embed_dim: 64
+        ckpt_path: PATH
+        ddconfig:
+          double_z: true
+          z_channels: 64
+          resolution: 128
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult:
+          - 1
+          - 1
+          - 2
+          - 2
+          - 4
+          - 4
+          num_res_blocks: 2
+          attn_resolutions:
+          - 16
+          - 8
+          dropout: 0.0
+        lossconfig:
+          target: torch.nn.Identity
+
+    prediction_stage_config:
+      target: src.modules.encoders.variational_split_transformer_prediction.VariationalSplitTransformerPredictorAutoregressive
+      params:
+        n_embed: 256 
+        n_enc_layer: 2
+        n_dec_layer: 1
+        n_output_tokens: 64
+        n_head: 2
+        dropout: 0.1
+        dim_feedforward: 128
+        obs_horizon: 5
+        future_horizon: 20
+        max_seq_len_encoder: 260
+        max_seq_len_decoder: 80
+        beta: 0.001
+        beta_low: 0.0001
+        deterministic_epochs: 10
+        low_reg_epochs: 20
+        linear_schedule: 2000
+
+
+data:
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 256
+    train_batch_size: 256
+    val_batch_size: 256
+    num_workers: 23
+    wrap: false
+    train:
+      target: src.data.nuscenes_ogm.NuscenesSeq
+      params:
+        path: PATH/train
+        path_latents: PATH/train
+        path_map_latents: PATH/train
+        path_cam_latents: PATH/train
+        past_len: 5
+        future_len: 15
+        step: 2 # 2 = 10 Hz, 1 = 20 Hz
+        size: 128
+        use_maps: True
+        use_cameras: True
+
+    validation:
+      target: src.data.nuscenes_ogm.NuscenesSeq
+      params:
+        path: PATH/val
+        path_latents: PATH/val
+        path_map_latents: PATH/val
+        path_cam_latents: PATH/val
+        past_len: 5
+        future_len: 15
+        step: 2
+        size: 128
+        use_maps: False
+        use_cameras: False
+  
+lightning:
+  callbacks:
+    image_logger:
+      target: main.ImageLogger
+      params:
+        batch_frequency_train: 2000
+        batch_frequency_val: 300
+        max_images: 8
+        increase_log_steps: False
+        rescale: False
+
+  trainer:
+    benchmark: True
+    max_epochs: 40

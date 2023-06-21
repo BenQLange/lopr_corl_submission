@@ -1,0 +1,55 @@
+model:
+  base_learning_rate: 4.5e-6
+  target: src.models.autoencoder.Autoencoder
+  params:
+    monitor: "val/rec_loss"
+    embed_dim: 64
+    lossconfig:
+      target: src.modules.losses.LPIPSVAEGAN
+      params:
+        disc_start: 0
+        kl_weight: 1.0
+        disc_weight: 1.0
+
+    ddconfig:
+      double_z: True
+      z_channels: 64
+      resolution: 256
+      in_channels: 3
+      out_ch: 3
+      ch: 128
+      ch_mult: [1,1,2,2,4,4] 
+      num_res_blocks: 2
+      attn_resolutions: [16,8]
+      dropout: 0.0
+
+data:
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 32
+    wrap: True
+    train:
+      target: src.data.dataset.Base
+      params:
+        path: PATH_TRAIN
+        size: 128
+
+    validation:
+      target: src.data.dataset.Base
+      params:
+        path: PATH_VAL
+        size: 128
+
+
+lightning:
+  callbacks:
+    image_logger:
+      target: main.ImageLogger
+      params:
+        batch_frequency: 1000
+        max_images: 8
+        increase_log_steps: True
+
+  trainer:
+    benchmark: True
+    accumulate_grad_batches: 2
